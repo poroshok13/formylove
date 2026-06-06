@@ -337,75 +337,7 @@ footer{text-align:center;padding:40px 24px;border-top:1px solid var(--border);
 /* ═══════════════════════════════════════════════
    SONGS DATA
 ═══════════════════════════════════════════════ */
-const SONGS = [
-  {
-    title:"Motion Picture Soundtrack", artist:"Radiohead",
-    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    startAt:14,
-    cover:"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80",
-    snippet:"Stop sending letters — letters always get burned.",
-    lrc:`[00:05.00] I will see you
-[00:09.50] in the next life
-[00:14.00] if you are very lucky
-[00:20.00] Stop sending letters
-[00:25.50] letters always get burned
-[00:31.00] I will see you
-[00:36.00] in the next life`
-  },
-  {
-    title:"Fourth of July", artist:"Sufjan Stevens",
-    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    startAt:22,
-    cover:"https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80",
-    snippet:"Do you realize — that everyone you know someday will die?",
-    lrc:`[00:04.00] We're all gonna die
-[00:10.00] Do you realize
-[00:16.00] That everyone you know
-[00:22.00] Someday will die
-[00:28.00] And instead of saying
-[00:34.00] All of your goodbyes
-[00:40.00] Let them know you realize`
-  },
-  {
-    title:"Holocene", artist:"Bon Iver",
-    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    startAt:8,
-    cover:"https://images.unsplash.com/photo-1515859005217-8a1f08870f59?w=600&q=80",
-    snippet:"And at once I knew — I was not magnificent.",
-    lrc:`[00:06.00] Someway baby it's part of me apart from me
-[00:12.00] You're laying waste to Halloween
-[00:18.00] You fucked it friend it's on its head
-[00:24.00] It stuck around like a bad friend
-[00:30.00] And at once I knew
-[00:36.00] I was not magnificent`
-  },
-  {
-    title:"Lua", artist:"Bright Eyes",
-    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-    startAt:30,
-    cover:"https://images.unsplash.com/photo-1542281286-9e0a16bb7366?w=600&q=80",
-    snippet:"I keep waving at the taxis, they keep turning their lights off.",
-    lrc:`[00:08.00] I know that it is freezing
-[00:14.00] but I think we have to walk
-[00:20.00] I keep waving at the taxis
-[00:26.00] they keep turning their lights off
-[00:32.00] But Julie knows a party
-[00:38.00] at some actor's West Side loft`
-  },
-  {
-    title:"Fake Plastic Trees", artist:"Radiohead",
-    src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-    startAt:18,
-    cover:"https://images.unsplash.com/photo-1509718443690-d8e2fb3474b7?w=600&q=80",
-    snippet:"She lives with a broken man — a cracked polystyrene man.",
-    lrc:`[00:05.00] She lives with a broken man
-[00:11.00] a cracked polystyrene man
-[00:17.00] who just crumbles and burns
-[00:23.00] She looks like the real thing
-[00:29.00] She tastes like the real thing
-[00:35.00] My fake plastic love`
-  }
-];
+const SONGS = [];
 
 /* ═══════════════════════════════════════════════
    GLOBAL STATE
@@ -926,7 +858,8 @@ updateVolIcon();
     const lrc=document.getElementById('imp-lyrics').value||'';
     const audioFile=document.getElementById('imp-audio').files[0];
     const coverFile=document.getElementById('imp-cover').files[0];
-    const song={title,artist,startAt,snippet,lrc,src:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',cover:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80',_audio:null};
+    if(!audioFile){setAdminStatus('Выбери аудиофайл, чтобы добавить песню.');return;}
+    const song={title,artist,startAt,snippet,lrc,src:'',cover:'data:image/gif;base64,R0lGODlhAQABAAAAACw=',_audio:null};
 
     let loaded=0,total=(audioFile?1:0)+(coverFile?1:0);
     function done(){if(++loaded>=total)add();}
@@ -947,7 +880,6 @@ updateVolIcon();
     }
     if(audioFile){const r=new FileReader();r.onload=e=>{song.src=e.target.result;song._audio=null;done();};r.readAsDataURL(audioFile);}
     if(coverFile){const r=new FileReader();r.onload=e=>{song.cover=e.target.result;done();};r.readAsDataURL(coverFile);}
-    if(total===0)add();
   };
   document.getElementById('btn-export-songs').onclick=copyExport;
   document.getElementById('btn-download-html').onclick=downloadUpdatedHtml;
