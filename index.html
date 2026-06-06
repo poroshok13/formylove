@@ -1,363 +1,292 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
-  <title>Heart Landing Page</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Песни в которых я нашел себя</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    html,
-    body {
-      width: 100%;
-      min-height: 100%;
-      overflow: hidden;
-      background: #000;
-    }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            padding-top: 60px; /* Отступ для прогресс-бара */
+        }
 
-    body {
-      position: fixed;
-      inset: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      touch-action: none;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: geometricPrecision;
-    }
+        /* Глобальный прогресс-бар */
+        .global-player {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: #1e1e1e;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            border-bottom: 2px solid #333;
+        }
 
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      display: block;
-      background: #000;
-    }
-  </style>
+        .global-info {
+            width: 200px;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #1db954;
+        }
+
+        /* Основной контент */
+        .header-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 50px 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .songs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 80%;
+            max-width: 1000px;
+            margin: 0 auto 100px auto;
+        }
+
+        /* Карточки в шахматном порядке */
+        .song-card {
+            width: 45%;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            background: #181818;
+            transition: transform 0.3s;
+        }
+
+        .song-card:nth-child(odd) {
+            align-self: flex-start;
+        }
+
+        .song-card:nth-child(even) {
+            align-self: flex-end;
+        }
+
+        .song-card:hover {
+            transform: scale(1.02);
+            border-color: #1db954;
+        }
+
+        .song-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .song-cover {
+            width: 100%;
+            height: 250px;
+            background-color: #282828;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+
+        .local-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            background: #1db954;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .play-btn:hover {
+            background: #1ed760;
+        }
+
+        .snippet-text {
+            font-style: italic;
+            color: #b3b3b3;
+            text-align: center;
+            line-height: 1.5;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .song-card {
+                width: 100%;
+                align-self: center !important;
+            }
+            .header-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <canvas id="scene" aria-label="Animated purple heart with falling red i love you text"></canvas>
 
-  <script>
-    (() => {
-      const canvas = document.getElementById("scene");
-      const ctx = canvas.getContext("2d", { alpha: false });
+    <div class="global-player">
+        <div class="global-info" id="global-song-name">Ничего не играет</div>
+        <div class="progress-container">
+            <input type="range" id="global-seek" min="0" max="100" value="0">
+        </div>
+        <div id="time-display">0:00 / 0:00</div>
+    </div>
 
-      const TAU = Math.PI * 2;
-      const textItems = [];
-      const heartDots = [];
-      const pointer = { x: 0, y: 0, active: false };
-      const textSprites = new Map();
+    <h1 class="header-title">Песни в которых я нашел себя</h1>
 
-      let width = 0;
-      let height = 0;
-      let dpr = 1;
-      let heartScale = 1;
-      let heartCenterX = 0;
-      let heartCenterY = 0;
-      let lastTime = performance.now();
-      let startTime = performance.now();
-      let textCount = 0;
-      let quality = 1;
+    <div class="songs-container">
+        
+        <div class="song-card" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" data-start="30">
+            <div class="song-title">Название Песни 1</div>
+            <img src="https://via.placeholder.com/400x250/1db954/ffffff?text=Обложка+1" alt="Обложка 1" class="song-cover">
+            <div class="local-player">
+                <button class="play-btn">▶</button>
+                <input type="range" class="local-seek" min="0" max="100" value="0" disabled>
+            </div>
+            <div class="snippet-text">
+                "Здесь будет текст отрывка,<br>
+                Который значит для меня многое..."
+            </div>
+        </div>
 
-      function rand(min, max) {
-        return min + Math.random() * (max - min);
-      }
+        <div class="song-card" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" data-start="65">
+            <div class="song-title">Название Песни 2</div>
+            <img src="https://via.placeholder.com/400x250/ff5722/ffffff?text=Обложка+2" alt="Обложка 2" class="song-cover">
+            <div class="local-player">
+                <button class="play-btn">▶</button>
+                <input type="range" class="local-seek" min="0" max="100" value="0" disabled>
+            </div>
+            <div class="snippet-text">
+                "Вторая песня, другие слова,<br>
+                Но та же самая душа..."
+            </div>
+        </div>
 
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-      }
+        <div class="song-card" data-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" data-start="15">
+            <div class="song-title">Название Песни 3</div>
+            <img src="https://via.placeholder.com/400x250/2196f3/ffffff?text=Обложка+3" alt="Обложка 3" class="song-cover">
+            <div class="local-player">
+                <button class="play-btn">▶</button>
+                <input type="range" class="local-seek" min="0" max="100" value="0" disabled>
+            </div>
+            <div class="snippet-text">
+                "Третий отрывок звучит здесь,<br>
+                Моя история в каждой строке."
+            </div>
+        </div>
 
-      function textSprite(fontSize) {
-        const key = Math.round(fontSize);
-        if (textSprites.has(key)) return textSprites.get(key);
+    </div>
 
-        const spriteCanvas = document.createElement("canvas");
-        const spriteCtx = spriteCanvas.getContext("2d");
-        const padding = key * 1.25;
+    <script>
+        const audio = new Audio();
+        const globalSeek = document.getElementById('global-seek');
+        const globalSongName = document.getElementById('global-song-name');
+        const timeDisplay = document.getElementById('time-display');
+        let currentCard = null;
 
-        spriteCtx.font = `700 ${key}px Arial, Helvetica, sans-serif`;
-        const metrics = spriteCtx.measureText("i love you");
-        spriteCanvas.width = Math.ceil(metrics.width + padding * 2);
-        spriteCanvas.height = Math.ceil(key * 3.4);
+        const cards = document.querySelectorAll('.song-card');
 
-        spriteCtx.font = `700 ${key}px Arial, Helvetica, sans-serif`;
-        spriteCtx.textAlign = "left";
-        spriteCtx.textBaseline = "middle";
-        spriteCtx.shadowColor = "rgba(190, 70, 255, 1)";
-        spriteCtx.shadowBlur = Math.max(12, key * 0.9);
-        spriteCtx.fillStyle = "#cf5cff";
-        spriteCtx.fillText("i love you", padding, spriteCanvas.height * 0.5);
-        spriteCtx.shadowBlur = Math.max(22, key * 1.35);
-        spriteCtx.globalAlpha = 0.42;
-        spriteCtx.fillStyle = "#f1bbff";
-        spriteCtx.fillText("i love you", padding, spriteCanvas.height * 0.5);
-        spriteCtx.globalAlpha = 1;
-        spriteCtx.shadowBlur = 0;
-        spriteCtx.fillStyle = "#e58bff";
-        spriteCtx.fillText("i love you", padding, spriteCanvas.height * 0.5);
-
-        const sprite = {
-          canvas: spriteCanvas,
-          width: spriteCanvas.width,
-          height: spriteCanvas.height
-        };
-
-        textSprites.set(key, sprite);
-        return sprite;
-      }
-
-      function heartPoint(t) {
-        const x = 16 * Math.pow(Math.sin(t), 3);
-        const y = -(
-          13 * Math.cos(t) -
-          5 * Math.cos(2 * t) -
-          2 * Math.cos(3 * t) -
-          Math.cos(4 * t)
-        );
-        return { x, y };
-      }
-
-      function createTextItem(initial) {
-        const fontSize = rand(
-          clamp(width * 0.018, 13, 21),
-          clamp(width * 0.03, 17, 28)
-        );
-        return {
-          x: rand(-width * 0.2, width * 1.05),
-          y: initial ? rand(-height, height) : rand(-height * 0.35, -fontSize * 3),
-          speed: rand(height * 0.16, height * 0.52),
-          drift: rand(-width * 0.03, width * 0.03),
-          wobble: rand(0.5, 2.2),
-          phase: rand(0, TAU),
-          rotation: rand(-0.22, 0.22),
-          fontSize,
-          alpha: rand(0.58, 1),
-          sprite: textSprite(fontSize)
-        };
-      }
-
-      function rebuildText() {
-        textItems.length = 0;
-        textCount = Math.floor(clamp((width * height) / 17000, 45, 150) * quality);
-        for (let i = 0; i < textCount; i += 1) {
-          textItems.push(createTextItem(true));
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
         }
-      }
 
-      function rebuildHeart() {
-        heartDots.length = 0;
+        cards.forEach(card => {
+            const playBtn = card.querySelector('.play-btn');
+            const src = card.getAttribute('data-src');
+            const startTime = parseFloat(card.getAttribute('data-start'));
+            const title = card.querySelector('.song-title').innerText;
+            const localSeek = card.querySelector('.local-seek');
 
-        const minSide = Math.min(width, height);
-        heartScale = minSide * 0.024;
-        heartCenterX = width * 0.5;
-        heartCenterY = height * 0.52;
+            playBtn.addEventListener('click', () => {
+                // Если кликнули на ту же песню, которая играет
+                if (currentCard === card && !audio.paused) {
+                    audio.pause();
+                    playBtn.innerText = '▶';
+                    return;
+                }
 
-        const rings = [
-          { offset: 0, count: 360, radius: 2.25, alpha: 1, chaos: 1.15 },
-          { offset: -0.28, count: 320, radius: 2.08, alpha: 0.94, chaos: 1.28 },
-          { offset: -0.58, count: 280, radius: 1.94, alpha: 0.84, chaos: 1.45 },
-          { offset: -0.88, count: 230, radius: 1.78, alpha: 0.72, chaos: 1.62 },
-          { offset: -1.18, count: 175, radius: 1.6, alpha: 0.56, chaos: 1.82 },
-          { offset: -1.46, count: 120, radius: 1.42, alpha: 0.4, chaos: 2.05 },
-          { offset: -1.7, count: 70, radius: 1.22, alpha: 0.28, chaos: 2.25 }
-        ];
-
-        const scaleJitter = clamp(minSide * 0.0015, 0.7, 1.8);
-
-        rings.forEach((ring) => {
-          const count = Math.floor(ring.count * quality);
-          for (let i = 0; i < count; i += 1) {
-            const t = (i / count) * TAU + rand(-0.006, 0.006);
-            const p = heartPoint(t);
-            const innerScale = 1 + ring.offset * 0.05;
-            const x = heartCenterX + p.x * heartScale * innerScale + rand(-scaleJitter, scaleJitter);
-            const y = heartCenterY + p.y * heartScale * innerScale + rand(-scaleJitter, scaleJitter);
-
-            heartDots.push({
-              x: rand(-width * 0.15, width * 1.15),
-              y: rand(-height * 0.2, height * 1.2),
-              vx: 0,
-              vy: 0,
-              tx: x,
-              ty: y,
-              radius: ring.radius * clamp(minSide / 850, 0.72, 1.25),
-              alpha: ring.alpha,
-              phase: rand(0, TAU),
-              phase2: rand(0, TAU),
-              chaos: ring.chaos * clamp(minSide * 0.006, 2.1, 5.8),
-              speedA: rand(1.4, 3.2),
-              speedB: rand(2.0, 4.6)
+                // Сброс кнопок всех карточек
+                document.querySelectorAll('.play-btn').forEach(btn => btn.innerText = '▶');
+                
+                // Настройка и запуск аудио
+                if (currentCard !== card) {
+                    audio.src = src;
+                    audio.currentTime = startTime;
+                    globalSongName.innerText = title;
+                    currentCard = card;
+                }
+                
+                audio.play();
+                playBtn.innerText = '⏸';
             });
-          }
         });
-      }
 
-      function resize() {
-        const deviceDpr = window.devicePixelRatio || 1;
-        width = window.innerWidth;
-        height = window.innerHeight;
-        const pixels = width * height * deviceDpr;
+        // Обновление прогресс-баров
+        audio.addEventListener('timeupdate', () => {
+            if (!audio.duration) return;
+            
+            const progressPercent = (audio.currentTime / audio.duration) * 100;
+            globalSeek.value = progressPercent;
+            
+            timeDisplay.innerText = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
 
-        quality = pixels > 2100000 ? 0.52 : pixels > 1200000 ? 0.66 : 0.84;
-        dpr = Math.min(deviceDpr, pixels > 1700000 ? 1.35 : 1.65);
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        rebuildText();
-        rebuildHeart();
-      }
+            if (currentCard) {
+                const localSeek = currentCard.querySelector('.local-seek');
+                localSeek.value = progressPercent;
+            }
+        });
 
-      function drawBackground() {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, width, height);
-      }
-
-      function drawFallingText(delta, elapsed) {
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-
-        for (let i = 0; i < textItems.length; i += 1) {
-          const item = textItems[i];
-          const sprite = item.sprite;
-          item.y += item.speed * delta;
-          item.x += item.drift * delta + Math.sin(elapsed * item.wobble + item.phase) * 0.18;
-
-          ctx.save();
-          ctx.translate(item.x, item.y);
-          ctx.rotate(item.rotation + Math.sin(elapsed * 0.7 + item.phase) * 0.04);
-          ctx.globalAlpha = item.alpha;
-          ctx.drawImage(sprite.canvas, 0, -sprite.height * 0.5, sprite.width, sprite.height);
-          ctx.restore();
-
-          if (item.y > height + sprite.height || item.x < -width * 0.45 || item.x > width * 1.25) {
-            textItems[i] = createTextItem(false);
-          }
-        }
-      }
-
-      function drawHeart(delta, elapsed) {
-        const assemble = clamp((elapsed - 0.25) / 2.4, 0, 1);
-        const ease = 1 - Math.pow(1 - assemble, 4);
-        const pulse = assemble >= 1
-          ? 1 + Math.sin((elapsed - 2.65) * 4.9) * 0.055 + Math.sin((elapsed - 2.65) * 9.8) * 0.018
-          : 0.86 + ease * 0.14;
-
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-
-        for (let i = 0; i < heartDots.length; i += 1) {
-          const dot = heartDots[i];
-          const chaosX = Math.sin(elapsed * dot.speedA + dot.phase) * dot.chaos;
-          const chaosY = Math.cos(elapsed * dot.speedB + dot.phase2) * dot.chaos * 0.72;
-          const tx = heartCenterX + (dot.tx - heartCenterX) * pulse + chaosX;
-          const ty = heartCenterY + (dot.ty - heartCenterY) * pulse + chaosY;
-
-          dot.vx += (tx - dot.x) * (4.8 + ease * 6.4) * delta;
-          dot.vy += (ty - dot.y) * (4.8 + ease * 6.4) * delta;
-          dot.vx *= Math.pow(0.0016, delta);
-          dot.vy *= Math.pow(0.0016, delta);
-          dot.x += dot.vx * delta * 60;
-          dot.y += dot.vy * delta * 60;
-
-          const shimmer = 0.82 + Math.sin(elapsed * 2.3 + dot.phase) * 0.18;
-          const alpha = dot.alpha * clamp(ease + 0.12, 0, 1) * shimmer;
-          const radius = dot.radius * (0.78 + pulse * 0.16);
-
-          ctx.beginPath();
-          ctx.globalAlpha = alpha * 0.28;
-          ctx.fillStyle = "#9e27ff";
-          ctx.arc(dot.x, dot.y, radius * 3.55, 0, TAU);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.globalAlpha = alpha;
-          ctx.fillStyle = "#c45cff";
-          ctx.arc(dot.x, dot.y, radius, 0, TAU);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      }
-
-      function drawZara(elapsed) {
-        const size = clamp(Math.min(width, height) * 0.09, 38, 96);
-        const breathe = 1 + Math.sin(elapsed * 4.8) * 0.035;
-
-        ctx.save();
-        ctx.translate(heartCenterX, heartCenterY + size * 0.08);
-        ctx.scale(breathe, breathe);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `800 ${size}px Arial, Helvetica, sans-serif`;
-        ctx.globalCompositeOperation = "lighter";
-        ctx.shadowColor = "rgba(194, 72, 255, 1)";
-        ctx.shadowBlur = size * 0.44;
-        ctx.fillStyle = "rgba(190, 70, 255, 0.82)";
-        ctx.fillText("ZARA", 0, 0);
-        ctx.shadowBlur = size * 0.18;
-        ctx.fillStyle = "#f0b8ff";
-        ctx.fillText("ZARA", 0, 0);
-        ctx.restore();
-      }
-
-      function drawPointerGlow(elapsed) {
-        if (!pointer.active) return;
-
-        const glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 90);
-        glow.addColorStop(0, "rgba(197, 71, 255, 0.22)");
-        glow.addColorStop(0.45, "rgba(185, 76, 255, 0.1)");
-        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(pointer.x, pointer.y, 90 + Math.sin(elapsed * 5) * 8, 0, TAU);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      function animate(now) {
-        const delta = Math.min((now - lastTime) / 1000, 0.033);
-        const elapsed = (now - startTime) / 1000;
-        lastTime = now;
-
-        drawBackground();
-        drawFallingText(delta, elapsed);
-        drawHeart(delta, elapsed);
-        drawZara(elapsed);
-        drawPointerGlow(elapsed);
-
-        requestAnimationFrame(animate);
-      }
-
-      window.addEventListener("resize", resize, { passive: true });
-      window.addEventListener("orientationchange", () => setTimeout(resize, 120), { passive: true });
-
-      window.addEventListener("pointermove", (event) => {
-        pointer.x = event.clientX;
-        pointer.y = event.clientY;
-        pointer.active = true;
-      }, { passive: true });
-
-      window.addEventListener("pointerleave", () => {
-        pointer.active = false;
-      }, { passive: true });
-
-      resize();
-      requestAnimationFrame((time) => {
-        startTime = time;
-        lastTime = time;
-        animate(time);
-      });
-    })();
-  </script>
+        // Перемотка с глобального бара
+        globalSeek.addEventListener('input', (e) => {
+            if (audio.duration) {
+                audio.currentTime = (e.target.value / 100) * audio.duration;
+            }
+        });
+        
+        audio.addEventListener('ended', () => {
+            if (currentCard) {
+                currentCard.querySelector('.play-btn').innerText = '▶';
+            }
+            globalSeek.value = 0;
+        });
+    </script>
 </body>
 </html>
